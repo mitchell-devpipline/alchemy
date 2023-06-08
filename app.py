@@ -136,27 +136,18 @@ def get_all_active_users():
 
 
 @app.route('/orgs/get', methods=['GET'])
-def get_all_active_users():
+def get_all_active_orgs():
     orgs = db.session.query(Organizations).filter(Organizations.active == True).all()
+    print(orgs)
     orgs_list = []
 
     for org in orgs:
         org_dict = {
-            "user_id": org.user_id,
-            "first_name": org.first_name,
-            "last_name": org.last_name,
-            "email": org.email,
+            "org_id": org.org_id,
+            "name": org.name,
             "phone": org.phone,
             "city": org.city,
             "state": org.state,
-            "organization": {
-                "org_id": org.organization.org_id,
-                "name": org.organization.name,
-                "phone": org.organization.phone,
-                "city": org.organization.city,
-                "state": org.organization.state,
-                "active": org.organization.active,
-            },
 
             "active": org.active,
         }
@@ -228,4 +219,4 @@ def del_org_by_id(id):
 
 if __name__ == "__main__":
     create_all()
-    app.run(port=8086, host="0.0.0.0")
+    app.run(port=8086, host="0.0.0.0", debug=True)
