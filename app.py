@@ -1,9 +1,10 @@
 from flask import Flask, request, jsonify
 from db import *
 import os
+from flask_marshmallow import Marshmallow
 
-from users import Users
-from organizations import Organizations
+from users import Users, user_schema, users_schema
+from organizations import Organizations, organizations_schema, organization_schema
 
 database_pre = os.environ.get("DATABASE_PRE")
 database_addr = os.environ.get("DATABASE_ADDR")
@@ -17,6 +18,7 @@ app.config["SQLALCHEMY_DATABASE_URI"] = f"{database_pre}{database_user}@{databas
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 init_db(app, db)
+ma = Marshmallow(app)
 
 
 def create_all():
@@ -137,23 +139,11 @@ def get_all_active_users():
 
 @app.route('/orgs/get', methods=['GET'])
 def get_all_active_orgs():
-    orgs = db.session.query(Organizations).filter(Organizations.active == True).all()
-    print(orgs)
-    orgs_list = []
-
-    for org in orgs:
-        org_dict = {
-            "org_id": org.org_id,
-            "name": org.name,
-            "phone": org.phone,
-            "city": org.city,
-            "state": org.state,
-
-            "active": org.active,
-        }
-
-        orgs_list.append(org_dict)
-    return jsonify(orgs_list), 200
+    orgs = db.session.query(Organizations).all()
+    if not orgs:
+        return jsonify("there are no orgs here"), 404
+    else:
+        return jsonify(organizations_schema.dump(orgs)), 200
 
 
 @app.route("/user/get/<id>", methods=["GET"])
@@ -185,6 +175,24 @@ def get_users_by_id(id):
     return jsonify(user_dict), 200
 
 # Update
+
+
+@app.route('/user/<uuid>', methods=['PUT'])
+def update_user(uuid):
+    req_data = request.form if request.form else request.json
+
+    user = db.session.query(Users).filter(Users.user_id == uuid).first()
+
+    if not user:
+        return jsonify("The user doesn't exist"), 404
+
+    for field in req_data.keys():
+        if getattr(user, field):
+            setattr(user, field, req_data[field])
+
+    db.session.commit()
+
+    return jsonify("User Updated.")
 
 # Delete
 
